@@ -41,6 +41,31 @@ services:
     volumes:
       - redis_data:/data
 
+  backend:
+    build: ./backend
+    container_name: devstack-backend
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - elasticsearch
+      - redis
+
+  frontend:
+    build: ./frontend
+    container_name: devstack-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
   es_data:
