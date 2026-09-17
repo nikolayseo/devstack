@@ -3,6 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from './product.entity.js';
 import { SearchService } from '../search/search.service.js';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { PRODUCT_INDEXING_QUEUE } from '../indexing/indexing.constants.js';
 
 @Injectable()
 export class ProductsService {
@@ -12,6 +15,7 @@ export class ProductsService {
     @InjectRepository(Product)
     private readonly repo: Repository<Product>,
     private readonly searchService: SearchService,
+    @InjectQueue(PRODUCT_INDEXING_QUEUE) private readonly indexingQueue: Queue,
   ) {}
 
   findAll() {
@@ -22,7 +26,8 @@ export class ProductsService {
     const product = this.repo.create(data);
     const saved = await this.repo.save(product);
 
-    await this.searchService.index(this.INDEX, String(saved.id), {
+    await this.indexingQueue.add('index-product', {
+      id: saved.id,
       name: saved.name,
       category: saved.category,
       price: saved.price,
