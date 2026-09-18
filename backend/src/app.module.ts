@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common';
+import { IndexingModule } from './indexing/indexing.module.js';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { TerminusModule } from '@nestjs/terminus';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
-import { IndexingModule } from './indexing/indexing.module.js';
 import { ProductsModule } from './products/products.module.js';
 import { SearchModule } from './search/search.module.js';
-import { HealthModule } from './health/health.module.js';
+import { AuthModule } from './auth/auth.module.js';
+import { KafkaModule } from './kafka/kafka.module.js';
 
 @Module({
   imports: [
@@ -28,17 +30,17 @@ import { HealthModule } from './health/health.module.js';
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_NAME'),
         autoLoadEntities: true,
-        // Схемой управляют миграции, а не автогенерация.
         synchronize: false,
         migrationsRun: true,
         migrations: ['dist/migrations/*.js'],
-        // Логировать каждый SQL-запрос можно только вне прода.
-        logging: config.get('NODE_ENV') !== 'production',
+        logging: true,
       }),
     }),
+    TerminusModule,
     SearchModule,
-    HealthModule,
     ProductsModule,
+    AuthModule,
+    KafkaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

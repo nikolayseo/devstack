@@ -1,11 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Product } from './product.entity.js';
 import { SearchService } from '../search/search.service.js';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
-import { PRODUCT_INDEXING_QUEUE } from '../indexing/indexing.constants.js';
+import { OutboxEvent } from '../outbox/outbox-event.entity.js';
 
 @Injectable()
 export class ProductsService {
@@ -15,7 +13,7 @@ export class ProductsService {
     @InjectRepository(Product)
     private readonly repo: Repository<Product>,
     private readonly searchService: SearchService,
-    @InjectQueue(PRODUCT_INDEXING_QUEUE) private readonly indexingQueue: Queue,
+    private readonly dataSource: DataSource,
   ) {}
 
   findAll() {
@@ -23,17 +21,26 @@ export class ProductsService {
   }
 
   async create(data: Partial<Product>) {
-    const product = this.repo.create(data);
-    const saved = await this.repo.save(product);
+    return this.dataSource.transaction(async (manager) => {
+      const product = manager.create(Product, data);
+      const saved = await manager.save(Product, product);
 
-    await this.indexingQueue.add('index-product', {
-      id: saved.id,
-      name: saved.name,
-      category: saved.category,
-      price: saved.price,
+      await manager.save(OutboxEvent, {
+        id: crypto.randomUUID(),
+        eventType: 'product.created',
+        aggregateType: 'product',
+        aggregateId: String(saved.id),
+        payload: {
+          id: saved.id,
+          name: saved.name,
+          category: saved.category,
+          price: saved.price,
+        },
+        publishedAt: null,
+      });
+
+      return saved;
     });
-
-    return saved;
   }
 
   async search(query: string) {

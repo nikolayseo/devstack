@@ -1,7 +1,15 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ProductsService } from './products.service.js';
 import { CreateProductDto } from './create-product.dto.js';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 
 @ApiTags('products')
 @Controller('products')
@@ -24,6 +32,8 @@ export class ProductsController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Создать товар' })
   @ApiBody({ type: CreateProductDto })
   @ApiResponse({ status: 201, description: 'Товар создан' })
