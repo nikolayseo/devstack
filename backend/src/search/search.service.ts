@@ -21,6 +21,19 @@ export class SearchService implements OnModuleInit {
     }
   }
 
+  /**
+   * Состояние кластера для health-check.
+   * Ключ "status" зарезервирован Terminus — отдаём как clusterStatus.
+   */
+  async clusterHealth() {
+    const res = await this.client.cluster.health();
+    return {
+      cluster: res.cluster_name,
+      clusterStatus: res.status,
+      nodes: res.number_of_nodes,
+    };
+  }
+
   async index(indexName: string, id: string, body: Record<string, unknown>) {
     return this.client.index({
       index: indexName,

@@ -1,25 +1,14 @@
 import { Controller, Get } from '@nestjs/common';
-import { HealthCheck, HealthCheckService, TypeOrmHealthIndicator } from '@nestjs/terminus';
+import { ApiExcludeEndpoint } from '@nestjs/swagger';
 import { AppService } from './app.service.js';
 
 @Controller()
 export class AppController {
-  constructor(
-    private readonly appService: AppService,
-    private readonly health: HealthCheckService,
-    private readonly db: TypeOrmHealthIndicator,
-  ) {}
+  constructor(private readonly appService: AppService) {}
 
   @Get()
+  @ApiExcludeEndpoint()
   getHello(): string {
     return this.appService.getHello();
-  }
-
-  @Get('health')
-  @HealthCheck()
-  getHealth() {
-    return this.health.check([
-      () => this.db.pingCheck('database'),
-    ]);
   }
 }
